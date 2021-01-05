@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -27,18 +28,18 @@ public class LDIFGeneration {
 	private static final String BUILD = "2018-09-09-08:21:39";
 	private static final String CLASSNAME = LDIFGeneration.class.getName();
 	static org.apache.log4j.Logger log = LogManager.getLogger(CLASSNAME);// DumpPasswordInformation.class.getName());
-	private static ArrayList<String> orgUnits = new ArrayList<String>();
-	private static ArrayList<String> areaCodes = new ArrayList<String>();
-	private static ArrayList<String> employeeTypes = new ArrayList<String>();
-	private static ArrayList<String> familyNames = new ArrayList<String>();
-	private static ArrayList<String> givenNames = new ArrayList<String>();
-	private static ArrayList<String> localities = new ArrayList<String>();
-	private static ArrayList<String> mailHosts = new ArrayList<String>();
-	private static ArrayList<String> positions = new ArrayList<String>();
-	private static ArrayList<String> titleRanks = new ArrayList<String>();
-	private static List<String> defaultObjectClasses = new ArrayList<String>();
-	private static final ArrayList<String> possibleChangeTypes = new ArrayList<String>();
-	private static final ArrayList<String> possibleDirectoryServerTypes = new ArrayList<String>();
+	private static ArrayList<String> orgUnits = new ArrayList<>();
+	private static ArrayList<String> areaCodes = new ArrayList<>();
+	private static ArrayList<String> employeeTypes = new ArrayList<>();
+	private static ArrayList<String> familyNames = new ArrayList<>();
+	private static ArrayList<String> givenNames = new ArrayList<>();
+	private static ArrayList<String> localities = new ArrayList<>();
+	private static ArrayList<String> mailHosts = new ArrayList<>();
+	private static ArrayList<String> positions = new ArrayList<>();
+	private static ArrayList<String> titleRanks = new ArrayList<>();
+	private static List<String> defaultObjectClasses = new ArrayList<>();
+	private static final ArrayList<String> possibleChangeTypes = new ArrayList<>();
+	private static final ArrayList<String> possibleDirectoryServerTypes = new ArrayList<>();
 	private static final String NL = System.getProperties().getProperty("line.separator");
 	private static RandomAccessFile input;
 	private static String dataPath = System.getProperty("user.dir") + System.getProperty("file.separator") + "Data";
@@ -161,7 +162,6 @@ public class LDIFGeneration {
 		log.info("[" + xx++ + "] numberOfEntries: " + numberOfEntries);
 		// Initialize output file and check if it exists and determine if we should overWrite file
 		FileWriter fileWriter = null;
-		BufferedWriter bufferedWriter = null;
 		File outPutFile = new File(outPutFilename);
 		if (outPutFile.exists()) {
 			try {
@@ -201,20 +201,23 @@ public class LDIFGeneration {
 				System.exit(1);
 			}
 		}
-		bufferedWriter = new BufferedWriter(fileWriter);
-		// Tell people where we are putting the output file
-		log.debug("output file is: " + outPutFilename);
-		init(dataPath);
-		// check some things
-		if (changeType.equalsIgnoreCase("None")) {
-			changeType = "";
-		} else {
-			verifySomeInputs(changeType, possibleChangeTypes);
+		try (BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
+			// Tell people where we are putting the output file
+			log.debug("output file is: " + outPutFilename);
+			init(dataPath);
+			// check some things
+			if (changeType.equalsIgnoreCase("None")) {
+				changeType = "";
+			} else {
+				verifySomeInputs(changeType, possibleChangeTypes);
+			}
+			verifySomeInputs(serverType, possibleDirectoryServerTypes);
+			// Generate Files
+			dbGen(baseDN, bufferedWriter, objectClass, changeType, serverType, isPeople, isCreateOUs, isUserUid,
+					useShortNames, overWriteExitingOutput, shortNameLength, numberOfEntries);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
-		verifySomeInputs(serverType, possibleDirectoryServerTypes);
-		// Generate Files
-		dbGen(baseDN, bufferedWriter, objectClass, changeType, serverType, isPeople, isCreateOUs, isUserUid,
-				useShortNames, overWriteExitingOutput, shortNameLength, numberOfEntries);
 	}
 
 	/**
@@ -284,9 +287,9 @@ public class LDIFGeneration {
 			String serverType, boolean isPeople, boolean isCreateOUs, boolean isUserUid, boolean useShortNames,
 			boolean overWriteExitingOutput, int shortNameLength, int numberOfEntries) {
 
-		ArrayList<String> dnAL = new ArrayList<String>(); // dnAl is all the dns we have generated so far.
-		ArrayList<String> mgrAL = new ArrayList<String>(); // mgrAL is all the managers dns we have so far
-		ArrayList<String> secAL = new ArrayList<String>(); // secAL is all the secretaries we have so far.
+		ArrayList<String> dnAL = new ArrayList<>(); // dnAl is all the dns we have generated so far.
+		ArrayList<String> mgrAL = new ArrayList<>(); // mgrAL is all the managers dns we have so far
+		ArrayList<String> secAL = new ArrayList<>(); // secAL is all the secretaries we have so far.
 		String str;
 		try {
 			bufferedWriter.write("version: 1" + NL); // set LDIF version ALWAYS Static
@@ -382,7 +385,7 @@ public class LDIFGeneration {
 						bufferedWriter.write(
 								NL + "homePhone: +1 " + ac + " " + com.willeke.utility.RandConvUtility.randInt(100, 999)
 										+ "-" + com.willeke.utility.RandConvUtility.randInt(1000, 9999));
-						bufferedWriter.write(NL + "initials: " + gn.substring(0, 1) + sn.substring(0, 1));
+						bufferedWriter.write(NL + "initials: " + (gn != null ? gn.substring(0, 1) : "") + (sn != null ? sn.substring(0, 1) : ""));
 						bufferedWriter.write(
 								NL + "mobile: +1 " + ac + " " + com.willeke.utility.RandConvUtility.randInt(100, 999)
 										+ "-" + com.willeke.utility.RandConvUtility.randInt(1000, 9999));
@@ -553,7 +556,7 @@ public class LDIFGeneration {
 			if (sn.length() >= shortNameLength) {
 				shortName = sn.substring(0, shortNameLength) + gn.substring(0, 1);
 			} else {
-				shortName = sn.substring(0, sn.length()) + gn.substring(0, 1);
+				shortName = sn + gn.substring(0, 1);
 			}
 			if (shortName.length() < shortNameLength) {
 				int countPad = String.valueOf(userCount).length();
@@ -691,6 +694,7 @@ public class LDIFGeneration {
 					Thread.sleep(10);
 				} catch (InterruptedException ex) {
 					System.out.println(ex);
+					Thread.currentThread().interrupt();
 				}
 			} catch (EOFException EOFex) {
 				System.out.println(EOFex);

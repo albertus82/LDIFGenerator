@@ -55,19 +55,19 @@ public class LDIFGenerator extends JFrame
     boolean addChangeType = true;
     boolean isQuiet = false;
     private String baseDN;
-    private ArrayList<String> orgUnits = new ArrayList<String>();
-    private ArrayList<String> areaCodes = new ArrayList<String>();
-    private ArrayList<String> employeeTypes = new ArrayList<String>();
-    private ArrayList<String> familyNames = new ArrayList<String>();
-    private ArrayList<String> givenNames = new ArrayList<String>();
-    private ArrayList<String> localities = new ArrayList<String>();
-    private ArrayList<String> mailHosts = new ArrayList<String>();
-    private ArrayList<String> positions = new ArrayList<String>();
-    private ArrayList<String> titleRanks = new ArrayList<String>();
-    private ArrayList<String> dnAL = new ArrayList<String>();
-    private ArrayList<String> mgrAL = new ArrayList<String>();
-    private ArrayList<String> secAL = new ArrayList<String>();
-    private ArrayList<String> userObjectClasses = new ArrayList<String>();
+    private ArrayList<String> orgUnits = new ArrayList<>();
+    private ArrayList<String> areaCodes = new ArrayList<>();
+    private ArrayList<String> employeeTypes = new ArrayList<>();
+    private ArrayList<String> familyNames = new ArrayList<>();
+    private ArrayList<String> givenNames = new ArrayList<>();
+    private ArrayList<String> localities = new ArrayList<>();
+    private ArrayList<String> mailHosts = new ArrayList<>();
+    private ArrayList<String> positions = new ArrayList<>();
+    private ArrayList<String> titleRanks = new ArrayList<>();
+    private ArrayList<String> dnAL = new ArrayList<>();
+    private ArrayList<String> mgrAL = new ArrayList<>();
+    private ArrayList<String> secAL = new ArrayList<>();
+    private ArrayList<String> userObjectClasses = new ArrayList<>();
     private RandomAccessFile input;
     private RandomAccessFile output;
     Random rand = new Random();
@@ -79,7 +79,7 @@ public class LDIFGenerator extends JFrame
     JButton jBRun = new JButton();
     GridBagLayout gridBagLayout3 = new GridBagLayout();
     JTextField jTFBaseDN = new JTextField();
-    JComboBox<String> jCBType = new JComboBox<String>(directoryTypes);
+    JComboBox<String> jCBType = new JComboBox<>(directoryTypes);
     JRadioButton jRBOUs = new JRadioButton();
     JRadioButton jRBPeople = new JRadioButton();
     JTextField jTFInPut = new JTextField();
@@ -90,14 +90,13 @@ public class LDIFGenerator extends JFrame
     JLabel jLDone = new JLabel();
     JScrollPane jScrollPane1 = new JScrollPane();
     JTextArea jTA = new JTextArea();
-    JComboBox<String> jCBChangeType = new JComboBox<String>(changeTypes);
+    JComboBox<String> jCBChangeType = new JComboBox<>(changeTypes);
     JLabel jLabel1 = new JLabel();
     JLabel jLabel2 = new JLabel();
     JLabel jLabel3 = new JLabel();
     JLabel jLabel4 = new JLabel();
     JButton jBExit = new JButton();
     JButton jBHelp = new JButton();
-    BrowserControl browser = new BrowserControl();
     BorderLayout borderLayout1 = new BorderLayout();
     JProgressBar PBar = new JProgressBar();
 
@@ -320,6 +319,7 @@ public class LDIFGenerator extends JFrame
 		catch (InterruptedException ex)
 		{
 		    System.out.println(ex);
+		    Thread.currentThread().interrupt();
 		}
 	    }
 	    catch (EOFException EOFex)
@@ -437,7 +437,7 @@ public class LDIFGenerator extends JFrame
 		    }
 		    else
 		    {
-			uid = fn.substring(0, fn.length()) + gn.substring(0, 1);
+				uid = fn + (gn != null ? gn.substring(0, 1) : "");
 			// Create DN
 		    }
 		    // When not generating OUs, put them in the base.
@@ -518,7 +518,7 @@ public class LDIFGenerator extends JFrame
 			    if (dnAL.size() > 1)
 			    { // Sec
 				str = getRand(dnAL);
-				if ((!(dn == str)) && (!(mgrAL.contains(str))))
+				if ((!(dn.equals(str))) && (!(mgrAL.contains(str))))
 				{ // if str is not a MGR and this is not the same DN Make a Sec!
 				    output.writeBytes(NL + "secretary: " + str);
 				    if (!(secAL.contains(str)))
@@ -527,7 +527,7 @@ public class LDIFGenerator extends JFrame
 				    }
 				}
 				str = getRand(dnAL);
-				if ((!(dn == str)) && (!(secAL.contains(str))))
+				if ((!(dn.equals(str))) && (!(secAL.contains(str))))
 				{
 				    output.writeBytes(NL + "manager: " + str);
 				    if (!(mgrAL.contains(str)))
