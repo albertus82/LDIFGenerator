@@ -6,6 +6,7 @@
 ###############################################################################
 .gradle
 build/
+bin/
 
 ###############################################################################
 # Compiled files
@@ -47,6 +48,8 @@ hs_err_pid*
 *.iml
 .idea/
 .project
+.classpath
+.settings/
 *.ctxt      # BlueJ files
 .mtj.tmp/   # Mobile Tools for Java (J2ME)
 gradle-app.setting # Ignore Gradle GUI config
